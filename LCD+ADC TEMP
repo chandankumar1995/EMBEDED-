@@ -1,0 +1,135 @@
+#define F_CPU 8000000UL
+#include <util/delay.h>
+#include <avr/io.h>
+
+#define led PORTB0
+
+//-----------------for LCD--------------------//
+#define Resister_select  PORTC0
+#define Read_write       PORTC1
+#define Enable           PORTC2
+
+//---------------LCD command------------------------------//
+void lcd_command(unsigned char cmd )// function to command for Lcd
+{
+	PORTD = cmd; // command goes to LCD which is connected to portB
+	PORTC &= ~(1<<Resister_select); // clear RS pin for command
+	PORTC &= ~(1<<Read_write); // clear RW pin for writing command to LCD
+	PORTC |=  (1<<Enable); // Enable pin high to low for sending command to lCD
+	_delay_ms(10);
+	PORTC &= ~(1<<Enable); //Low
+}
+
+//---------------LCD data display--------------------//
+void Lcd_data_display(unsigned char my_char[])// function to data for Lcd
+{
+	for(int i=0; my_char[i]!=0; i++)
+	{
+		PORTD = my_char[i];
+		PORTC |= (1<<Resister_select); // RS pin at high
+		PORTC &= ~(1<<Read_write);
+		PORTC |= (1<<Enable); // Enable pin high to low for sending data to lCD
+		_delay_ms(10);
+		PORTC &= ~(1<<Enable);
+	}
+}
+
+//---------------for lcd activation---------------//
+void lcd_enable(void)
+{
+	lcd_command(0x38); // for lcd both row activation
+	lcd_command(0x0e); // for lcd on and cursor blinking
+}
+
+//-------------------for lcd clear-------------------//
+void clear_lcd(void)
+{
+	lcd_command(0x01);// lcd clear code
+}
+
+//----------for row 1 in lcd--------------------//
+void row_1(void)
+{
+	lcd_command(0x80); // for 1 row
+}
+
+//--------------------for row 2 in lcd------------------//
+void row_2(void)
+{
+	lcd_command(0xc0); // for 2 row
+}
+
+//----------------for row 3 in lcd-----------------------//
+void row_3(void)
+{
+	lcd_command(0x94); // for 3 row
+}
+
+//-----------------for row 4 in lcd---------------------//
+void row_4(void)
+{
+	lcd_command(0xD4); // for 4 row
+}
+
+void ADC_init(void)
+{
+	//---------setting the reference voltage---------------//
+	ADMUX = (1<<REFS0);        //----V-ref = avcc----//
+	
+	//------------enabling adc and presscaler------------//
+	ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //-----128 prescaler-------//
+}
+
+uint16_t Read_sensor_data(unsigned char sensor_data)
+{
+	//-------------selecting the channel---------------//
+	sensor_data = sensor_data & (0b00000000);
+	ADMUX = (ADMUX & 0xF8)|sensor_data;
+
+	//-------------start single conversion---------------//
+	ADCSRA|= (1<<ADSC);
+	//------------- wait for conversion to complete--------------//
+	while(ADCSRA & (1<<ADSC));
+	return ADC;
+}
+
+int main(void)
+{ 
+	
+	DDRC = 7; // for rs,rw,en
+	DDRD = 255;
+	//DDRB = 0xff;
+	ADC_init();
+	lcd_enable();
+	clear_lcd();
+	row_1();
+	Lcd_data_display("----Temperature----");
+	row_3();
+	Lcd_data_display("-----Input Voltage----");
+	uint16_t ADC_result;
+	float input_voltage;
+	float step_size = 4.9;
+	int sensor_temprature;
+	unsigned char string[10];     //-----  for temperature -----//	
+	unsigned char string1[10];   //------ for voltage ------//
+	uint8_t send_data_to_slave;
+	while(1)
+	{
+		ADC_result = Read_sensor_data(0);
+		input_voltage = ADC_result*step_size; // 12*4.9 = 58.8/10 = 5.8 degree centigrate 
+		sensor_temprature = ADC_result/2;
+		
+			itoa(sensor_temprature,string,10);
+            dtostrf(input_voltage,6,2,string1);			
+			row_2();
+			Lcd_data_display(string);
+			Lcd_data_display(" Degree Centigrade");
+			row_4();
+			Lcd_data_display(string1);
+			Lcd_data_display("  mvolt");
+		
+		
+	}
+	
+	
+}
