@@ -1,0 +1,150 @@
+#include <avr/io.h>
+#define F_CPU 8000000UL
+#include <util/delay.h>
+
+void lcd_command(unsigned char cmd)
+{
+	PORTC = ((PORTC & 0b00001111)|(cmd & 0b11110000));
+	PORTC &= ~(1<<PC0);
+	PORTC |= (1<<PC1);
+	_delay_ms(10);
+	PORTC &= ~(1<<PC1);
+	_delay_ms(50);
+	PORTC = ((PORTC & 0b00001111)|(cmd<<4));
+	PORTC &= ~(1<<PC0);
+	PORTC |= (1<<PC1);
+	_delay_ms(10);
+	PORTC &= ~(1<<PC1);
+	
+}
+void lcd_data(unsigned char data)
+{
+	PORTC = ((PORTC & 0b00001111)|(data & 0b11110000));
+	PORTC |= (1<<PC0);
+	PORTC |= (1<<PC1);
+	_delay_ms(10);
+	PORTC &= ~(1<<PC1);
+	_delay_ms(50);
+	PORTC = ((PORTC & 0b00001111)|(data<<4));
+	PORTC |= (1<<PC0);
+	PORTC |= (1<<PC1);
+	_delay_ms(10);
+	PORTC &= ~(1<<PC1);
+	
+}
+void ldc_init()
+{
+	lcd_command(0x33);
+	lcd_command(0x32);
+	lcd_command(0x28);
+	_delay_ms(15);
+	lcd_command(0x0E);
+	lcd_command(0x06);
+	lcd_command(0x01);
+	_delay_ms(5);
+	lcd_command(0x80);
+	
+	
+}
+void row_1()
+{
+	PORTB = 0b00000001;
+	if(PINA &(1<<PA0))
+	{
+			lcd_data('1');
+	}
+	if(PINA &(1<<PA1))
+	{
+		lcd_data('4');
+	}
+	if(PINA &(1<<PA2))
+	{
+		lcd_data('7');
+	}
+	if(PINA &(1<<PA3))
+	{
+		lcd_data('*');
+	}
+}
+void row_2()
+{
+	PORTB = 0b00000010;
+	if(PINA &(1<<PA0))
+	{
+		lcd_data('2');
+	}
+	if(PINA &(1<<PA1))
+	{
+		lcd_data('5');
+	}
+	if(PINA &(1<<PA2))
+	{
+		lcd_data('8');
+	}
+	if(PINA &(1<<PA3))
+	{
+		lcd_data('0');
+	}
+}
+void row_3()
+{
+	PORTB = 0b00000100;
+	if(PINA &(1<<PA0))
+	{
+		lcd_data('3');
+	}
+	if(PINA &(1<<PA1))
+	{
+		lcd_data('6');
+	}
+	if(PINA &(1<<PA2))
+	{
+		lcd_data('9');
+	}
+	if(PINA &(1<<PA3))
+	{
+		lcd_data('#');
+	}
+}
+void row_4()
+{
+	PORTB = 0b00001000;
+	if(PINA &(1<<PA0))
+	{
+		lcd_data('A');
+	}
+	if(PINA &(1<<PA1))
+	{
+		lcd_data('B');
+	}
+	if(PINA &(1<<PA2))
+	{
+		lcd_data('C');
+	}
+	if(PINA &(1<<PA3))
+	{
+		lcd_command(0x01);
+	}
+}
+int main(void)
+{
+	DDRA = 0x00;
+	DDRB = 0xFF;
+	DDRC = 0xFF;
+	ldc_init();
+	/* Replace with your application code */
+	while (1)
+	{
+		
+		row_1();
+		_delay_ms(50);
+		row_2();
+		_delay_ms(50);
+		row_3();
+		_delay_ms(50);
+		row_4();
+		_delay_ms(50);
+	}
+}
+
+
